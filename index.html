@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CHRONO·PROBE — Age Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-0: #070b12;
+      --bg-1: #0d1524;
+      --bg-2: #121c2e;
+      --ink: #d6e4f7;
+      --ink-dim: #7a8eab;
+      --accent: #3dd6c6;
+      --accent-2: #e8a838;
+      --danger: #ff6b7a;
+      --line: rgba(61, 214, 198, 0.18);
+      --glow: rgba(61, 214, 198, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      min-height: 100%;
+    }
+
+    body {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse 90% 60% at 50% -10%, #16304a 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 100% 100%, #1a2030 0%, transparent 50%),
+        linear-gradient(180deg, var(--bg-0), var(--bg-1) 40%, var(--bg-0));
+      background-attachment: fixed;
+      overflow-x: hidden;
+    }
+
+    /* starfield */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(1px 1px at 12% 18%, rgba(214, 228, 247, 0.55), transparent),
+        radial-gradient(1px 1px at 28% 72%, rgba(214, 228, 247, 0.35), transparent),
+        radial-gradient(1.5px 1.5px at 44% 32%, rgba(61, 214, 198, 0.45), transparent),
+        radial-gradient(1px 1px at 61% 58%, rgba(214, 228, 247, 0.4), transparent),
+        radial-gradient(1px 1px at 73% 14%, rgba(232, 168, 56, 0.4), transparent),
+        radial-gradient(1.5px 1.5px at 86% 41%, rgba(214, 228, 247, 0.5), transparent),
+        radial-gradient(1px 1px at 93% 81%, rgba(61, 214, 198, 0.35), transparent),
+        radial-gradient(1px 1px at 8% 88%, rgba(214, 228, 247, 0.3), transparent);
+      animation: drift 40s linear infinite;
+      z-index: 0;
+    }
+
+    @keyframes drift {
+      from { transform: translateY(0); }
+      to { transform: translateY(-40px); }
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: clamp(2rem, 6vw, 4rem) 1.25rem 3rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 1.75rem;
+    }
+
+    header {
+      text-align: center;
+      animation: fadeUp 0.7s ease both;
+    }
+
+    .brand {
+      font-family: Orbitron, sans-serif;
+      font-weight: 800;
+      font-size: clamp(1.85rem, 6vw, 2.75rem);
+      letter-spacing: 0.08em;
+      line-height: 1.1;
+      color: var(--ink);
+      text-transform: uppercase;
+    }
+
+    .brand span {
+      color: var(--accent);
+    }
+
+    .tagline {
+      margin-top: 0.65rem;
+      color: var(--ink-dim);
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .status .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.75); }
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: linear-gradient(160deg, rgba(18, 28, 46, 0.92), rgba(7, 11, 18, 0.88));
+      padding: 1.5rem;
+      animation: fadeUp 0.7s ease 0.12s both;
+    }
+
+    .panel-label {
+      font-family: Orbitron, sans-serif;
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      margin-bottom: 0.5rem;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: stretch;
+    }
+
+    input[type="date"] {
+      flex: 1 1 220px;
+      font-family: inherit;
+      font-size: 1rem;
+      color: var(--ink);
+      background: var(--bg-0);
+      border: 1px solid var(--line);
+      padding: 0.85rem 1rem;
+      outline: none;
+      color-scheme: dark;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input[type="date"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--glow);
+    }
+
+    button {
+      font-family: Orbitron, sans-serif;
+      font-weight: 700;
+      font-size: 0.78rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--bg-0);
+      background: var(--accent);
+      border: none;
+      padding: 0.9rem 1.4rem;
+      cursor: pointer;
+      transition: transform 0.15s, filter 0.15s, background 0.15s;
+    }
+
+    button:hover {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .error {
+      margin-top: 0.85rem;
+      color: var(--danger);
+      font-size: 0.85rem;
+      min-height: 1.25em;
+    }
+
+    .results {
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+      animation: fadeUp 0.55s ease both;
+    }
+
+    .results.visible {
+      display: flex;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 520px) {
+      .metrics {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      background: rgba(7, 11, 18, 0.55);
+      padding: 1rem 1.1rem;
+    }
+
+    .metric .k {
+      font-size: 0.68rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      margin-bottom: 0.4rem;
+    }
+
+    .metric .v {
+      font-family: Orbitron, sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.35rem, 4vw, 1.85rem);
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+
+    .metric .u {
+      font-size: 0.75rem;
+      color: var(--ink-dim);
+      margin-left: 0.25rem;
+    }
+
+    .commentary {
+      border-left: 3px solid var(--accent-2);
+      background: rgba(232, 168, 56, 0.06);
+      padding: 1rem 1.15rem;
+    }
+
+    .commentary .k {
+      font-family: Orbitron, sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+      margin-bottom: 0.55rem;
+    }
+
+    .commentary p {
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: var(--ink);
+    }
+
+    .scifi {
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .scifi-item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.65rem 0.9rem;
+      align-items: baseline;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .scifi-item:last-child {
+      border-bottom: none;
+    }
+
+    .scifi-item .badge {
+      font-family: Orbitron, sans-serif;
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      color: var(--ink-dim);
+      animation: fadeUp 0.7s ease 0.25s both;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 class="brand">CHRONO<span>·</span>PROBE</h1>
+      <p class="tagline">Temporal residue analyzer // birthdate → existential readout</p>
+      <div class="status"><span class="dot" aria-hidden="true"></span> Probe online · local computation only</div>
+    </header>
+
+    <section class="panel" aria-labelledby="input-label">
+      <p class="panel-label" id="input-label">Input sequence</p>
+      <label for="birthdate">Subject birthdate</label>
+      <div class="row">
+        <input type="date" id="birthdate" max="" required />
+        <button type="button" id="calc-btn">Run probe</button>
+      </div>
+      <p class="error" id="error" role="alert"></p>
+    </section>
+
+    <section class="panel results" id="results" aria-live="polite">
+      <p class="panel-label">Telemetry</p>
+      <div class="metrics">
+        <div class="metric">
+          <div class="k">Elapsed years</div>
+          <div class="v"><span id="years">—</span><span class="u">yr</span></div>
+        </div>
+        <div class="metric">
+          <div class="k">Elapsed days</div>
+          <div class="v"><span id="days">—</span><span class="u">d</span></div>
+        </div>
+      </div>
+
+      <div class="commentary">
+        <div class="k">Sarcasm module</div>
+        <p id="sarcasm">—</p>
+      </div>
+
+      <div>
+        <p class="panel-label" style="margin-top: 0.5rem;">Sci-fi cross-reference</p>
+        <div class="scifi" id="scifi"></div>
+      </div>
+    </section>
+
+    <footer>CHRONO·PROBE v1.0 · no ships were harmed in this calculation</footer>
+  </div>
+
+  <script>
+    const birthInput = document.getElementById("birthdate");
+    const calcBtn = document.getElementById("calc-btn");
+    const errorEl = document.getElementById("error");
+    const resultsEl = document.getElementById("results");
+    const yearsEl = document.getElementById("years");
+    const daysEl = document.getElementById("days");
+    const sarcasmEl = document.getElementById("sarcasm");
+    const scifiEl = document.getElementById("scifi");
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    birthInput.max = formatDate(today);
+
+    calcBtn.addEventListener("click", runProbe);
+    birthInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") runProbe();
+    });
+
+    function formatDate(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    function parseLocalDate(value) {
+      const [y, m, d] = value.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    function ageInYears(birth, now) {
+      let years = now.getFullYear() - birth.getFullYear();
+      const beforeBirthday =
+        now.getMonth() < birth.getMonth() ||
+        (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate());
+      if (beforeBirthday) years -= 1;
+      return years;
+    }
+
+    function daysBetween(a, b) {
+      const ms = b.getTime() - a.getTime();
+      return Math.floor(ms / 86400000);
+    }
+
+    function pick(arr, seed) {
+      return arr[Math.abs(seed) % arr.length];
+    }
+
+    function sarcasmFor(years, days) {
+      const lines = [];
+
+      if (years < 0 || days < 0) {
+        return "Time traveler detected. Either that or you invented a birthdate that hasn't happened yet. Bold.";
+      }
+      if (years === 0) {
+        lines.push(
+          "Congratulations: you've completed fewer orbits than a fridge warranty.",
+          "Still in tutorial mode. The universe is being patient. Barely."
+        );
+      } else if (years < 13) {
+        lines.push(
+          `${years} years. Peak "I could be a Jedi apprentice" energy. The Council is unimpressed.`,
+          `You've been alive ${days.toLocaleString()} days and somehow still think bedtime is optional.`
+        );
+      } else if (years < 18) {
+        lines.push(
+          "Teenager detected. Hormones online, judgment offline. Classic organic firmware.",
+          `At ${years}, you're legally almost a person and emotionally a reboot loop.`
+        );
+      } else if (years < 25) {
+        lines.push(
+          `${years}: old enough for adult problems, young enough to solve them with pizza.`,
+          "Your life so far is basically a pilot episode. Network executives are concerned."
+        );
+      } else if (years < 35) {
+        lines.push(
+          "Welcome to the 'I should have a five-year plan' zone. Spoiler: you don't.",
+          `${days.toLocaleString()} days of existence and your sleep schedule still looks like a glitch.`
+        );
+      } else if (years < 50) {
+        lines.push(
+          "Midlife telemetry: back hurts, opinions soft, sarcasm fully upgraded.",
+          `You've completed ${years} Earth orbits. The Force remains... mid.`
+        );
+      } else if (years < 70) {
+        lines.push(
+          "Veteran of the carbon wars. You've outlasted most startups and several TV reboots.",
+          `${years} years. HAL would call that 'operational.' Your knees call that 'hostile.'`
+        );
+      } else {
+        lines.push(
+          "Legendary unit. You've survived more history than most textbooks bother covering.",
+          `At ${years}, you're basically a living archive with better one-liners.`
+        );
+      }
+
+      return pick(lines, years + days);
+    }
+
+    function scifiRefs(years, days) {
+      const marsYears = (days / 687).toFixed(1);
+      const dogYears = (years * 7).toFixed(0);
+      const vulcan = (years * 1.3).toFixed(1); // joke: Vulcans age "slower" vibe flipped
+      const regenerations = Math.max(1, Math.ceil(years / 13));
+      const warpFactor = Math.min(9.9, (years / 10 + 1)).toFixed(1);
+      const coffeeCups = Math.round(days * 1.4);
+
+      return [
+        {
+          badge: "Mars",
+          text: `On Mars you'd be ~${marsYears} Martian years old. Still not enough for a red planet midlife crisis.`
+        },
+        {
+          badge: "Doctor Who",
+          text: `At one regeneration every 13 Earth years, that's about ${regenerations} faces. The sonic screwdriver budget will notice.`
+        },
+        {
+          badge: "Star Trek",
+          text: `Rough Vulcan-equivalent: ~${vulcan} "logical" years. Emotionally? You've been on red alert since puberty.`
+        },
+        {
+          badge: "Lightspeed",
+          text: `In ${days.toLocaleString()} days, light could have traveled absurd distances. You mostly traveled to the fridge.`
+        },
+        {
+          badge: "Warp",
+          text: `Suggested cruise setting: Warp ${warpFactor}. Actual velocity: walking to meetings.`
+        },
+        {
+          badge: "Canine",
+          text: `In dog years: ~${dogYears}. In human years: still arguing with alarms.`
+        },
+        {
+          badge: "Caffeine",
+          text: `Estimated coffee-equivalent lifespan: ~${coffeeCups.toLocaleString()} cups. The Empire runs on less.`
+        }
+      ];
+    }
+
+    function runProbe() {
+      errorEl.textContent = "";
+      const value = birthInput.value;
+
+      if (!value) {
+        errorEl.textContent = "Birthdate required. Even droids have a manufacture date.";
+        resultsEl.classList.remove("visible");
+        return;
+      }
+
+      const birth = parseLocalDate(value);
+      if (Number.isNaN(birth.getTime())) {
+        errorEl.textContent = "Invalid date. Recalibrate your temporal coordinates.";
+        resultsEl.classList.remove("visible");
+        return;
+      }
+
+      if (birth > today) {
+        errorEl.textContent = "Future birthdate rejected. This probe is not a time machine. Yet.";
+        resultsEl.classList.remove("visible");
+        return;
+      }
+
+      const years = ageInYears(birth, today);
+      const days = daysBetween(birth, today);
+
+      yearsEl.textContent = years.toLocaleString();
+      daysEl.textContent = days.toLocaleString();
+      sarcasmEl.textContent = sarcasmFor(years, days);
+
+      const refs = scifiRefs(years, days);
+      // rotate which refs show based on day count for variety
+      const start = days % refs.length;
+      const chosen = [];
+      for (let i = 0; i < 4; i++) {
+        chosen.push(refs[(start + i) % refs.length]);
+      }
+
+      scifiEl.innerHTML = chosen
+        .map(
+          (r) =>
+            `<div class="scifi-item"><span class="badge">${r.badge}</span><span>${r.text}</span></div>`
+        )
+        .join("");
+
+      resultsEl.classList.remove("visible");
+      // retrigger animation
+      void resultsEl.offsetWidth;
+      resultsEl.classList.add("visible");
+    }
+  </script>
+</body>
+</html>
